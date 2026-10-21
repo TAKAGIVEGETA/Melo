@@ -21,6 +21,7 @@ struct ControllerMappingView: View {
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var ryujinxController: RyujinxController
+    @ObservedObject private var nativeSettingsManager = NativeSettingsManager.shared
 
     @State private var mapping: ControllerMapping = .standard()
     @State private var listening: BindingTarget?
@@ -45,6 +46,8 @@ struct ControllerMappingView: View {
                 hintSection
 
                 controllerTypeSection
+
+                touchGestureSection
 
                 stickPreviewSection
 
@@ -145,6 +148,49 @@ struct ControllerMappingView: View {
                 }
             } label: {
                 Text("Type")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var touchGestureSection: some View {
+        if controller.virtual {
+            Section {
+                Toggle(
+                    "Touch Gestures",
+                    isOn: nativeSettingsManager.setting(forKey: "TouchGestures", default: false).projectedValue
+                )
+
+                if nativeSettingsManager.setting(forKey: "TouchGestures", default: false).value {
+                    ForEach(TouchGesture.allCases) { gesture in
+                        Picker(selection: gestureBinding(for: gesture)) {
+                            Text("Unbound").tag(VirtualControllerButton?.none)
+
+                            ForEach(VirtualControllerButton.bindable, id: \.id) { button in
+                                Text(button.switchDisplayName)
+                                    .tag(VirtualControllerButton?.some(button))
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: gesture.iconName)
+                                    .foregroundColor(.accentColor)
+
+                                Text(gesture.displayName)
+                            }
+                        }
+                    }
+
+                    Button("Reset Gesture Mapping") {
+                        nativeSettingsManager.setting(
+                            forKey: "TouchGestureMapping",
+                            default: TouchGestureMapping()
+                        ).value = TouchGestureMapping()
+                    }
+                }
+            } header: {
+                Text("Touch Gestures")
+            } footer: {
+                Text("Replaces the on-screen controller while this game is running. Game touch input is used by the gestures instead.")
             }
         }
     }
@@ -309,6 +355,18 @@ struct ControllerMappingView: View {
         listening = nil
 
         nativeController?.endCapture()
+    }
+
+    private func gestureBinding(for gesture: TouchGesture) -> Binding<VirtualControllerButton?> {
+        let mapping = nativeSettingsManager.setting(
+            forKey: "TouchGestureMapping",
+            default: TouchGestureMapping()
+        ).projectedValue
+
+        return Binding(
+            get: { mapping.wrappedValue[gesture] },
+            set: { mapping.wrappedValue[gesture] = $0 }
+        )
     }
 
     

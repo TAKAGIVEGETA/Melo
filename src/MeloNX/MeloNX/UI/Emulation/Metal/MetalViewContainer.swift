@@ -11,6 +11,8 @@ struct MetalViewContainer: View {
     
     var showView: Bool = true
     var airplay: Bool = false
+    var touchGesturesEnabled: Bool = false
+    var touchGestureMapping: TouchGestureMapping = TouchGestureMapping()
     @State var isPortrait: Bool = false
 
     @ObservedObject var ryujinxController: RyujinxController
@@ -42,7 +44,11 @@ struct MetalViewContainer: View {
                     }
 
                 VStack(spacing: 0) {
-                    MetalViewRepresentable(showView: showView)
+                    MetalViewRepresentable(
+                        showView: showView,
+                        touchGesturesEnabled: touchGesturesEnabled,
+                        touchGestureMapping: touchGestureMapping
+                    )
                         .frame(width: size.width, height: size.height)
                         .allowsHitTesting(true)
 

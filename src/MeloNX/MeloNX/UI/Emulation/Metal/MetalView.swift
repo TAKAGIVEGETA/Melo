@@ -12,6 +12,7 @@ class MetalView: MTKView {
     @ObservedObject var menuViewShower: InGameConfigView_MenuView = .shared
     private var activeTouches: [UITouch] = []
     private var ignoredTouches: Set<UITouch> = []
+    private var touchGestureInputView: TouchGestureInputView?
 
     private var aspectRatio: AspectRatio = .fixed16x9
 
@@ -153,15 +154,49 @@ class MetalView: MTKView {
         activeTouches.removeAll()
         ignoredTouches.removeAll()
     }
+
+    func setTouchGestures(enabled: Bool, mapping: TouchGestureMapping) {
+        if enabled {
+            let gestureView = touchGestureInputView ?? TouchGestureInputView(gamepad: VirtualControllerManager.shared)
+            gestureView.mapping = mapping
+            gestureView.onTouch = { [weak self] in
+                guard let self else { return }
+
+                Task.detached {
+                    await self.menuViewShower.triggerButton()
+                }
+            }
+
+            if gestureView.superview == nil {
+                gestureView.frame = bounds
+                gestureView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                addSubview(gestureView)
+            }
+
+            touchGestureInputView = gestureView
+        } else {
+            touchGestureInputView?.reset()
+            touchGestureInputView?.removeFromSuperview()
+            touchGestureInputView = nil
+        }
+    }
 }
 
 
 
 struct MetalViewRepresentable: UIViewRepresentable {
     var showView: Bool
+    var touchGesturesEnabled: Bool
+    var touchGestureMapping: TouchGestureMapping
     
-    init(showView: Bool = true) {
+    init(
+        showView: Bool = true,
+        touchGesturesEnabled: Bool = false,
+        touchGestureMapping: TouchGestureMapping = TouchGestureMapping()
+    ) {
         self.showView = showView
+        self.touchGesturesEnabled = touchGesturesEnabled
+        self.touchGestureMapping = touchGestureMapping
     }
     
     func makeUIView(context: Context) -> UIView {
@@ -171,7 +206,12 @@ struct MetalViewRepresentable: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {
-        
+        guard let view = uiView as? MetalView else { return }
+
+        view.setTouchGestures(
+            enabled: touchGesturesEnabled,
+            mapping: touchGestureMapping
+        )
     }
     
     @discardableResult

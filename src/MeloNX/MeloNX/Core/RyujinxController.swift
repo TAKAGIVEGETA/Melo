@@ -231,9 +231,7 @@ public final class RyujinxController: ObservableObject {
         
         controllerManager.attachAllControllers()
         
-        if NativeSettingsManager.exists(game.titleId) {
-            NativeSettingsManager.setShared(game.titleId, pullOriginal: true)
-        }
+        NativeSettingsManager.setShared(game.titleId, pullOriginal: true)
         
         loadWithoutSave(game.titleId)
         

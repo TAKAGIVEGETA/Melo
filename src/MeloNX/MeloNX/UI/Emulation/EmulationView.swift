@@ -23,13 +23,37 @@ struct EmulationView: View {
     init(game: GameInfo) {
         self.game = game
     }
+
+    private var touchGesturesEnabled: Bool {
+        nativeSettingsManager.setting(forKey: "TouchGestures", default: false).value
+    }
+
+    private var touchGestureMapping: TouchGestureMapping {
+        nativeSettingsManager.setting(forKey: "TouchGestureMapping", default: TouchGestureMapping()).value
+    }
     
     @ViewBuilder
     func emulationView(_ airplay: Bool = false) -> some View {
-        if airplay { MetalViewRepresentable(showView: true).ignoresSafeArea().frame(maxWidth: .infinity, maxHeight: .infinity) } else {
-            MetalViewContainer(showView: !isConnected, airplay: airplay, ryujinxController: ryujinxController, statisticsHandler: statisticsHandler, nativeSettingsManager: nativeSettingsManager)
+        if airplay {
+            MetalViewRepresentable(
+                showView: true,
+                touchGesturesEnabled: touchGesturesEnabled && controllerManager.hasVirtualController(),
+                touchGestureMapping: touchGestureMapping
+            )
+            .ignoresSafeArea()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            MetalViewContainer(
+                showView: !isConnected,
+                airplay: airplay,
+                touchGesturesEnabled: touchGesturesEnabled && controllerManager.hasVirtualController(),
+                touchGestureMapping: touchGestureMapping,
+                ryujinxController: ryujinxController,
+                statisticsHandler: statisticsHandler,
+                nativeSettingsManager: nativeSettingsManager
+            )
                 .overlay {
-                    if controllerManager.hasVirtualController() && !airplay {
+                    if controllerManager.hasVirtualController() && !airplay && !touchGesturesEnabled {
                         ControllerView(controller: VirtualControllerManager.shared, isEditing: false, gameId: game.titleId, gameName: game.titleName)
                             .opacity(nativeSettingsManager.setting(forKey: "On-ScreenControllerOpacity", default: 1.0).value)
                             .ignoresSafeArea(.all, edges: .vertical)
