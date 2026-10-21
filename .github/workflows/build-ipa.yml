@@ -57,6 +57,29 @@ jobs:
             CODE_SIGN_IDENTITY='' \
             DEVELOPMENT_TEAM=''
 
+      - name: Embed entitlements (ad-hoc signature)
+        run: |
+          set -euo pipefail
+          APP="build/MeloNX.xcarchive/Products/Applications/MeloNX.app"
+          if [ ! -d "$APP" ]; then
+            echo "Expected app bundle not found: $APP" >&2
+            exit 1
+          fi
+
+          APPEX=$(find "$APP/PlugIns" -maxdepth 1 -name '*.appex' -print -quit 2>/dev/null || true)
+          if [ -n "$APPEX" ]; then
+            codesign --force --sign - \
+              --entitlements src/MeloNX/MeloNXRamDonor/MeloNXRamDonor.entitlements \
+              "$APPEX"
+          fi
+
+          codesign --force --sign - --generate-entitlement-der \
+            --entitlements src/MeloNX/MeloNX/MeloNX.entitlements \
+            "$APP"
+
+          echo "Embedded entitlements in main app:"
+          codesign -d --entitlements :- "$APP" || true
+
       - name: Package unsigned IPA
         run: |
           set -euo pipefail
