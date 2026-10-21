@@ -178,9 +178,9 @@ final class TouchGestureInputView: UIView {
         releaseWorkItem?.cancel()
         releaseWorkItem = nil
 
-        guard let activeButton else { return }
+        guard let button = activeButton else { return }
 
-        gamepad?.buttonReleased(activeButton)
+        gamepad?.buttonReleased(button)
         activeButton = nil
     }
 
