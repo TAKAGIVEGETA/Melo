@@ -141,8 +141,6 @@ class MainSceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
 class MainViewController: GCEventViewController {
-    private var displayRegistration: AnyObject?
-
     private let host = UIHostingController<AnyView>(rootView: AnyView(
         AppRootView()
             .environmentObject(RyujinxController.shared)
@@ -176,13 +174,8 @@ class MainViewController: GCEventViewController {
         view.addSubview(host.view)
         host.didMove(toParent: self)
 
-        if #available(iOS 27.0, *) {
-            let configuration = UISceneConfiguration()
-            configuration.delegateClass = ExternalDisplaySceneDelegate.self
-            displayRegistration = registerSceneAccessory(
-                .externalNonInteractive(sceneConfiguration: configuration)
-            )
-        }
+        // iOS 27 scene accessory APIs are unavailable in the stable Xcode 26 SDK.
+        // External display still works through the AirPlay path in Air.swift.
     }
 }
 
