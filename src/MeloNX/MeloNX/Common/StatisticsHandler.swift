@@ -24,12 +24,12 @@ class StatisticsHandler: ObservableObject {
     
     func registerPush() {
         CallbackManager.register(name: "push_statistics") { data in
-            guard let ptr = data.ptr, data.len >= 33 else { return }
+            guard let ptr = data.ptr, data.len >= 32 else { return }
             
             let fps = ptr.load(fromByteOffset: 0, as: Double.self)
             let frameTime = ptr.load(fromByteOffset: 8, as: Double.self)
             let started = ptr.load(fromByteOffset: 16, as: UInt8.self) != 0
-            let fifo = ptr.load(fromByteOffset: 17, as: Double.self)
+            let fifo = ptr.load(fromByteOffset: 24, as: Double.self)
             
             Task {
                 await MainActor.run {

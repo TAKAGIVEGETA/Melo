@@ -401,7 +401,7 @@ namespace Ryujinx.Library
             static double Sanitize(double v) =>
                 double.IsFinite(v) ? Math.Round(v, 2) : 0.0;
 
-            Span<byte> bytes = stackalloc byte[33];
+            Span<byte> bytes = stackalloc byte[32];
 
             double fps = before ? Sanitize(Device.Statistics.GetGameFrameRate()) : 0d;
             double frameTime = before ? Sanitize(Device.Statistics.GetGameFrameTime()) : 0d;
@@ -410,7 +410,7 @@ namespace Ryujinx.Library
             BinaryPrimitives.WriteDoubleLittleEndian(bytes[0..],  fps);
             BinaryPrimitives.WriteDoubleLittleEndian(bytes[8..],  frameTime);
             bytes[16] = (byte)(_ranFirstFrame ? 1 : 0);
-            BinaryPrimitives.WriteDoubleLittleEndian(bytes[17..], fifo);
+            BinaryPrimitives.WriteDoubleLittleEndian(bytes[24..], fifo);
 
             unsafe {
                 fixed (byte* ptr = bytes)
