@@ -1,0 +1,81 @@
+name: Build IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ipa:
+    name: Build unsigned IPA
+    runs-on: macos-26
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain versions
+        run: |
+          xcodebuild -version
+          swift --version
+          dotnet --version
+
+      - name: Build Ryujinx.Library (NativeAOT ios-arm64)
+        run: |
+          dotnet publish src/Ryujinx.Library \
+            -c Release \
+            -r ios-arm64 \
+            --self-contained true \
+            -p:ExtraDefineConstants=DISABLE_UPDATER
+
+      - name: Archive MeloNX (unsigned)
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project src/MeloNX/MeloNX.xcodeproj \
+            -scheme MeloNX \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/MeloNX.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            DEVELOPMENT_TEAM=''
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP="build/MeloNX.xcarchive/Products/Applications/MeloNX.app"
+          if [ ! -d "$APP" ]; then
+            echo "Expected app bundle not found: $APP" >&2
+            exit 1
+          fi
+          rm -rf build/Payload
+          mkdir -p build/Payload
+          cp -R "$APP" build/Payload/MeloNX.app
+          cd build
+          rm -f MeloNX-unsigned.ipa
+          zip -qry MeloNX-unsigned.ipa Payload
+          ls -lh MeloNX-unsigned.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeloNX-unsigned-ipa
+          path: build/MeloNX-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
