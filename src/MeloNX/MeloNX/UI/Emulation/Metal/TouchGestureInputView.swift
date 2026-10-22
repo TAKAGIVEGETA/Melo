@@ -117,9 +117,10 @@ final class TouchGestureInputView: UIView {
             }
 
             directionSlot = gesture
-            press(mapping[gesture], automaticallyRelease: true)
+            press(mapping[gesture], automaticallyRelease: false)
 
         case .ended, .cancelled, .failed:
+            releaseActiveButton()
             directionSlot = nil
 
         default:
